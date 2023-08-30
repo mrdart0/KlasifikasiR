@@ -1,0 +1,177 @@
+---
+title: "Multiclass SVM"
+output: html_document
+date: '2022-10-21'
+---
+
+```{r}
+library(textclean)
+library(devtools)
+library(katadasaR)
+library(tokenizers)
+library(stopwords)
+library(dplyr)
+
+library(proxy)
+library(tm)
+
+library(e1071)
+library(kernlab)
+
+library(caret)
+library(gensvm)
+library(corrplot)
+library(superml)
+library(remotes)
+```
+
+```{r Preprocessing data latih}
+data_latih <- read.csv('C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\data-latih.csv')
+data_latih <- data_latih$Kalimat %>%
+  as.character()
+data_latih <- strip(data_latih)
+
+
+stemming_latih <- function(x){
+  paste(lapply(x,katadasar),collapse = " ")
+}
+data_latih <- lapply(tokenize_words(data_latih[]),stemming_latih)
+hasil_preprocessing_latih <- tokenize_words(data_latih)
+hasil_preprocessing_latih
+```
+
+
+
+```{r Preprocessing data uji}
+data_uji <- read.csv('C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\data-uji.csv')
+data_uji <- data_uji$Kalimat %>%
+  as.character()
+data_uji <- strip(data_uji)
+data_uji <- data_uji %>%
+  as.data.frame() %>%
+  distinct()
+data_uji <- as.character(data_uji$.)
+stemming_uji <- function(x){
+  paste(lapply(x,katadasar),collapse = " ")
+}
+data_uji <- lapply(tokenize_words(data_uji[]),stemming_uji)
+hasil_preprocessing_uji <- tokenize_words(data_uji)
+myStopwords <- readLines("C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\idstopwords.txt")
+hasil_preprocessing_uji <- as.character(hasil_preprocessing_uji)
+hasil_preprocessing_uji <- tokenize_words(hasil_preprocessing_uji, stopwords = myStopwords)
+hasil_preprocessing_uji
+```
+
+```{r}
+tf <- TfIdfVectorizer$new(smooth_idf = TRUE, min_df = 0.3)
+tf$fit(hasil_preprocessing_latih)
+tf_uji <- tf$transform(hasil_preprocessing_uji)
+tf_uji
+```
+
+
+```{r}
+
+```
+
+
+
+```{r Tf - Idf data latih}
+TFIDF_latih <- function(hasil_preprocessing_latih){
+  #tf
+  tf_latih <- Corpus(VectorSource(hasil_preprocessing_latih))
+  
+  tf_latih <- TermDocumentMatrix(tf_latih) %>% as.matrix()
+  #idf
+  idf_latih <- log(ncol(tf_latih) /  (1 + rowSums(tf_latih != 0))) %>% diag()
+  tf_idf_latih <- crossprod(tf_latih,idf_latih)
+  colnames(tf_idf_latih) <- rownames(tf_latih)
+  return(tf_idf_latih / sqrt(rowSums(tf_idf_latih^2)))
+}
+TFIDF_latih <- TFIDF_latih(hasil_preprocessing_latih)
+TFIDF_latih
+```
+
+
+
+
+```{r Multiclass SVM}
+
+dataklasifikasi <- read.csv('C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\dattrain.csv',header = TRUE)
+dataklasifikasi = as.data.frame(dataklasifikasi)
+dataklasifikasi$Pernyataan = factor(dataklasifikasi$Pernyataan)
+
+```
+
+
+```{r}
+datauji <- read.csv('C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\testingfix.csv',header = TRUE)
+datauji = as.data.frame(datauji)
+datauji$Pernyataan = factor(datauji$Pernyataan)
+
+```
+
+
+
+```{r}
+prediction <- predict(svm1, dataklasifikasi)
+xtab <- table(dataklasifikasi$Pernyataan, prediction)
+xtab
+```
+
+
+
+```{r}
+attach(dataklasifikasi)
+svm1 <- svm(pernyataan ~ ., data = dataklasifikasi)
+x <- subset(dataklasifikasi, select = -pernyataan)
+y <- pernyataan
+for(i in 1:length(y)) {
+ 
+ if (is.na(y[i])) {
+     svm(x,y)
+  }
+}
+
+summary(svm1)
+```
+
+
+```{r}
+
+```
+
+
+
+```{r}
+prediction <- predict(svm1, dataklasifikasi)
+xtab <- confusionMatrix(table(dataklasifikasi$Pernyataan, prediction))
+xtab
+```
+
+```{r}
+attach(datauji)
+svm2 <- svm(Pernyataan ~ ., data = datauji)
+x <- subset(datauji, select = -Pernyataan)
+y <- Pernyataan
+for(i in 1:length(y)) {
+ 
+ if (is.na(y[i])) {
+     svm(x,y)
+  }
+}
+summary(svm2)
+```
+
+
+
+```{r}
+prediction1 <- predict(svm2, datauji)
+xtab <- confusionMatrix(table(datauji$Pernyataan, prediction1)) 
+xtab
+```
+
+
+
+
+

@@ -1,0 +1,159 @@
+---
+title: "svmkfold"
+author: "Dartod"
+date: '2022-11-17'
+output: html_document
+---
+
+```{r}
+library(textclean)
+library(devtools)
+library(katadasaR)
+library(tokenizers)
+library(stopwords)
+library(dplyr)
+library(groupdata2)
+library(proxy)
+library(tm)
+library(cvms)
+library(e1071)
+library(kernlab)
+library(ggplot2)
+library(caret)
+library(gensvm)
+library(corrplot)
+library(superml)
+library(remotes)
+library(RTextTools)
+```
+
+```{r}
+data_latih <- read.csv('C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\datakfold.csv')
+data_uji <- read.csv('C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\data-uji.csv')
+```
+
+
+```{r}
+y_train <- data_latih$Pernyataan
+y_test <- data_uji$Pernyataan
+```
+
+
+```{r}
+pre_latih <- data_latih$Kalimat %>%
+  as.character()
+pre_latih <- strip(pre_latih)
+
+
+stemming_latih <- function(x){
+  paste(lapply(x,katadasar),collapse = " ")
+}
+pre_latih <- lapply(tokenize_words(pre_latih),stemming_latih)
+hasil_preprocessing_latih <- tokenize_words(pre_latih)
+hasil_preprocessing_latih
+```
+
+
+```{r}
+pre_uji <- data_uji$Kalimat %>%
+  as.character()
+pre_uji<- strip(pre_uji)
+
+
+stemming_uji <- function(x){
+  paste(lapply(x,katadasar),collapse = " ")
+}
+pre_uji <- lapply(tokenize_words(pre_uji),stemming_uji)
+hasil_preprocessing_uji <- tokenize_words(pre_uji)
+hasil_preprocessing_uji
+```
+
+
+```{r}
+library(openxlsx)
+tf <- TfIdfVectorizer$new()
+x_train_tf <- tf$fit_transform(hasil_preprocessing_latih)
+x_test_tf <- tf$transform(hasil_preprocessing_uji)
+x_train_tf
+#write.csv(x_train_tf, file="C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\hasiltestfix2.csv")
+```
+
+
+```{r}
+#svm1 <- svm(factor(y_train)~.,data = x_train_tf,
+           # method = "C-classification", kernal = "radial",
+            #gamma = 0.1, cost = 10)
+#summary(svm1)
+#plot(factor(y_train),x_train_tf, color.palette = rainbow, svSymbol=17)
+```
+
+
+```{r}
+#pred <- predict(svm1,x_test_tf)
+#pred2 <- predict(svm1,x_train_tf)
+#table(pred)
+#xtab <- table(actual = factor(y_test), prediksi = pred)
+#xtab
+#plot(pred)
+```
+
+
+```{r}
+#hasil_svm <- confusionMatrix(table(factor(y_test), pred))
+#hasil_svm
+```
+
+```{r}
+#data_gabung2 <- read.csv('C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\datagabung.csv')
+```
+
+
+
+```{r}
+
+
+gabung <- data.frame(x_train_tf,factor(y_train))
+data_gabung <- dplyr::as_tibble(gabung)
+data_gabung
+```
+
+
+```{r}
+#write.csv(gabung3, file="C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\datagabung3.csv")
+```
+
+
+
+```{r}
+data_gabung %>%
+  dplyr::count(factor.y_train.)
+```
+```{r}
+library(vtreat)
+baris <- nrow(data_gabung)
+splitPlan <- kWayCrossValidation(baris,3,NULL,NULL)
+str(splitPlan)
+splitPlan
+```
+
+```{r}
+k <- 3
+baris <- nrow(data_gabung)
+splitPlan <- kWayCrossValidation(baris,k,NULL,NULL)
+
+for (i in 1:k) {
+  split <- splitPlan[[i]]
+  model <- svm(factor.y_train.~.,data = data_gabung[split$train,],
+              method = "C-classification", kernal = "radial",
+              gamma = 1, cost = 1, skala = TRUE)
+  
+  model.pred.cv <- predict(model, newdata = data_gabung[split$app,])
+  cat("fold cross validation =",i,"->")
+  print(model)
+cat("The accuracy of SVM classifier is =",100*mean(model.pred.cv==data_gabung$factor.y_train.[split$app]),"%")
+  confMat <- table(model.pred.cv, data_gabung$factor.y_train.[split$app])
+  print(confMat)
+}
+
+```
+

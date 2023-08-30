@@ -1,0 +1,138 @@
+---
+title: "SVM"
+author: "Dartod"
+date: '2022-10-24'
+output: html_document
+---
+
+```{r}
+
+library(textclean)
+library(devtools)
+library(katadasaR)
+library(tokenizers)
+library(stopwords)
+library(dplyr)
+library(groupdata2)
+library(proxy)
+library(tm)
+library(cvms)
+library(e1071)
+library(kernlab)
+library(ggplot2)
+library(caret)
+library(gensvm)
+library(corrplot)
+library(superml)
+library(remotes)
+library(RTextTools)
+```
+
+```{r}
+data_latih <- read.csv('C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\data-latih2.csv')
+data_uji <- read.csv('C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\data-uji.csv')
+```
+
+
+```{r}
+y_train <- data_latih$Pernyataan
+y_test <- data_uji$Pernyataan
+
+```
+
+
+
+```{r}
+pre_latih <- data_latih$Kalimat %>%
+  as.character()
+pre_latih <- strip(pre_latih)
+
+
+stemming_latih <- function(x){
+  paste(lapply(x,katadasar),collapse = " ")
+}
+pre_latih <- lapply(tokenize_words(pre_latih),stemming_latih)
+hasil_preprocessing_latih <- tokenize_words(pre_latih)
+hasil_preprocessing_latih
+```
+
+```{r}
+pre_uji <- data_uji$Kalimat %>%
+  as.character()
+pre_uji<- strip(pre_uji)
+
+
+stemming_uji <- function(x){
+  paste(lapply(x,katadasar),collapse = " ")
+}
+pre_uji <- lapply(tokenize_words(pre_uji),stemming_uji)
+hasil_preprocessing_uji <- tokenize_words(pre_uji)
+hasil_preprocessing_uji
+```
+```{r}
+#TFIDF_latih <- function(hasil_preprocessing_latih){
+  #tf
+  #tf_latih <- Corpus(VectorSource(hasil_preprocessing_latih))
+  
+  #tf_latih <- TermDocumentMatrix(tf_latih) %>% as.matrix()
+  #idf
+  #idf_latih <- log(ncol(tf_latih) /  (1 + rowSums(tf_latih != 0))) %>% diag()
+  #tf_idf_latih <- crossprod(tf_latih,idf_latih)
+  #colnames(tf_idf_latih) <- rownames(tf_latih)
+  #return(tf_idf_latih / sqrt(rowSums(tf_idf_latih^2)))
+#}
+#TFIDF_latih <- TFIDF_latih(hasil_preprocessing_latih)
+#TFIDF_latih
+```
+
+
+
+```{r}
+library(openxlsx)
+tf <- TfIdfVectorizer$new()
+x_train_tf <- tf$fit_transform(hasil_preprocessing_latih)
+x_test_tf <- tf$transform(hasil_preprocessing_uji)
+x_train_tf
+#write.csv(x_test_tf, file="C:\\Users\\Mrdart0\\Documents\\websiteR\\MulticlassSVM\\svm\\hasiltestfix1.csv")
+
+```
+```{r}
+svm1 <- svm(factor(y_train)~.,data = x_train_tf,
+            method = "C-classification", kernel = "radial",
+            gamma = 0.1, cost = 10)
+summary(svm1)
+plot(factor(y_train),x_train_tf)
+
+
+```
+
+
+
+
+
+```{r}
+pred <- predict(svm1,x_test_tf)
+pred2 <- predict(svm1,x_train_tf)
+#table(pred)
+xtab <- table(actual = factor(y_test), prediksi = pred)
+xtab
+plot(pred)
+```
+```{r}
+xtab2 <- table(actual = factor(y_train), prediksi = pred2)
+xtab2
+plot(pred2)
+```
+
+
+
+
+```{r}
+hasil_svm <- confusionMatrix(table(factor(y_test), pred))
+hasil_svm
+```
+
+```{r}
+
+```
+
